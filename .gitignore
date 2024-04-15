@@ -1,0 +1,10 @@
+.idea
+.vs
+.vscode
+*.exe
+*.bin
+bin/
+*.db
+*.sqlite
+*.sqlite3
+__debug_bin
