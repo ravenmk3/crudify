@@ -67,7 +67,6 @@ func (g *Generator) Execute() error {
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -82,9 +81,10 @@ func (g *Generator) readManifest(ctx *generationContext) error {
 }
 
 func (g *Generator) readDbSchema(ctx *generationContext) error {
-	logrus.Info("Reading database schema")
-
 	dbc := g.config.Database
+	logrus.Infof("Reading database schema - %s:%d/%s",
+		dbc.Host, dbc.Port, dbc.Database)
+
 	provider, err := mysql.NewMySqlSchemaProvider(dbc.Host, dbc.Port, dbc.Username, dbc.Password)
 	if err != nil {
 		log.Fatal(err)
@@ -108,6 +108,8 @@ func (g *Generator) readDbSchema(ctx *generationContext) error {
 }
 
 func (g *Generator) renderGlobalTemplates(ctx *generationContext) error {
+	logrus.Info("Rendering global templates")
+
 	for _, tplProps := range ctx.Manifest.GlobalTemplates {
 		err := g.renderGlobalTemplate(ctx, &tplProps)
 		if err != nil {
@@ -118,6 +120,8 @@ func (g *Generator) renderGlobalTemplates(ctx *generationContext) error {
 }
 
 func (g *Generator) renderGlobalTemplate(ctx *generationContext, props *TemplateProps) error {
+	logrus.Infof("Rendering global template: %s", props.File)
+
 	file := path.Join(g.tmplDir, props.File)
 	tplBytes, err := os.ReadFile(file)
 	if err != nil {
@@ -139,6 +143,8 @@ func (g *Generator) renderGlobalTemplate(ctx *generationContext, props *Template
 }
 
 func (g *Generator) renderEntityTemplates(ctx *generationContext) error {
+	logrus.Info("Rendering entity templates")
+
 	for _, tplProps := range ctx.Manifest.EntityTemplates {
 		err := g.renderEntityTemplate(ctx, &tplProps)
 		if err != nil {
@@ -149,6 +155,8 @@ func (g *Generator) renderEntityTemplates(ctx *generationContext) error {
 }
 
 func (g *Generator) renderEntityTemplate(ctx *generationContext, props *TemplateProps) error {
+	logrus.Infof("Rendering entity template: %s", props.File)
+
 	file := path.Join(g.tmplDir, props.File)
 	tplBytes, err := os.ReadFile(file)
 	if err != nil {
@@ -173,6 +181,8 @@ func (g *Generator) renderEntityTemplate(ctx *generationContext, props *Template
 
 func (g *Generator) renderEntityTemplateWithTable(ctx *generationContext,
 	tmpl *template.Template, table *common.TableSchema, outputPattern string) error {
+
+	logrus.Infof("Rendering entity template: %s, %s", tmpl.Name(), table.Name)
 
 	data := &EntityTemplateData{
 		Global: ctx.GlobalData,

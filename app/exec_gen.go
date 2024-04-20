@@ -15,5 +15,12 @@ func ExecGenerate(tmplDir, outputDir, configFile string) error {
 	if err != nil {
 		return err
 	}
-	return generator.Execute()
+
+	err = generator.Execute()
+	if err != nil {
+		return err
+	}
+
+	logrus.Info("Generation finished")
+	return nil
 }
