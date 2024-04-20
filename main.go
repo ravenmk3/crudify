@@ -1,25 +1,22 @@
 package main
 
 import (
-	"log"
+	"os"
 
-	"crudify/db/mysql"
+	"crudify/app"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
-	provider, err := mysql.NewMySqlSchemaProvider("misaka", 3306, "root", "mysql")
+	logrus.SetOutput(os.Stdout)
+	logrus.SetLevel(logrus.InfoLevel)
+	logrus.SetFormatter(&logrus.TextFormatter{
+		ForceColors:   true,
+		FullTimestamp: false,
+	})
+
+	err := app.RunCliApp()
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
-
-	defer func() {
-		_ = provider.Close()
-	}()
-
-	tables, err := provider.GetTables("canal_manager")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	println(tables)
 }

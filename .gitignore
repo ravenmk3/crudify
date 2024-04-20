@@ -8,3 +8,5 @@ bin/
 *.sqlite
 *.sqlite3
 __debug_bin
+.sample/
+.output/
