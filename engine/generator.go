@@ -280,7 +280,17 @@ func (g *Generator) runScripts(scriptFiles []string, varName string, data any) e
 	script := strings.Join(scripts, "\n\n")
 	vm := otto.New()
 
-	err := vm.Set(varName, data)
+	fns := &JsFunctions{}
+	err := vm.Set("Utils", fns)
+	if err != nil {
+		return err
+	}
+	err = vm.Set("F", fns)
+	if err != nil {
+		return err
+	}
+
+	err = vm.Set(varName, data)
 	if err != nil {
 		return err
 	}

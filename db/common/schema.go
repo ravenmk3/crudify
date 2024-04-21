@@ -2,8 +2,6 @@ package common
 
 import (
 	"io"
-
-	"crudify/utils"
 )
 
 type DataType string
@@ -50,22 +48,6 @@ type ColumnSchema struct {
 	Comment         string
 }
 
-func (s *ColumnSchema) NameCamelCase() string {
-	return utils.ToCamelCase(s.Name)
-}
-
-func (s *ColumnSchema) NamePascalCase() string {
-	return utils.ToPascalCase(s.Name)
-}
-
-func (s *ColumnSchema) NameSnakeCase() string {
-	return utils.ToSnakeCase(s.Name)
-}
-
-func (s *ColumnSchema) NameKebabCase() string {
-	return utils.ToKebabCase(s.Name)
-}
-
 func (s *ColumnSchema) JavaDataType() string {
 	t, ok := javaTypeMap[s.DataType]
 	if ok {
@@ -87,22 +69,6 @@ func (s *TableSchema) PrimaryKeyColumn() *ColumnSchema {
 		}
 	}
 	return nil
-}
-
-func (s *TableSchema) NameCamelCase() string {
-	return utils.ToCamelCase(s.Name)
-}
-
-func (s *TableSchema) NamePascalCase() string {
-	return utils.ToPascalCase(s.Name)
-}
-
-func (s *TableSchema) NameSnakeCase() string {
-	return utils.ToSnakeCase(s.Name)
-}
-
-func (s *TableSchema) NameKebabCase() string {
-	return utils.ToKebabCase(s.Name)
 }
 
 type SchemaProvider interface {
