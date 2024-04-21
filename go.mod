@@ -3,6 +3,7 @@ module crudify
 go 1.21.1
 
 require (
+	github.com/fatih/camelcase v1.0.0
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/robertkrimen/otto v0.4.0
