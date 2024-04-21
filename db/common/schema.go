@@ -38,6 +38,7 @@ const (
 type ColumnSchema struct {
 	Name            string
 	DataType        DataType
+	NativeType      string
 	MaxLength       int
 	IsNullable      bool
 	IsAutoIncrement bool
@@ -65,10 +66,27 @@ func (s *ColumnSchema) NameKebabCase() string {
 	return utils.ToKebabCase(s.Name)
 }
 
+func (s *ColumnSchema) JavaDataType() string {
+	t, ok := javaTypeMap[s.DataType]
+	if ok {
+		return t
+	}
+	return "Object"
+}
+
 type TableSchema struct {
 	Name    string
-	Columns []ColumnSchema
+	Columns []*ColumnSchema
 	Comment string
+}
+
+func (s *TableSchema) PrimaryKeyColumn() *ColumnSchema {
+	for _, column := range s.Columns {
+		if column.IsPrimaryKey {
+			return column
+		}
+	}
+	return nil
 }
 
 func (s *TableSchema) NameCamelCase() string {
@@ -89,5 +107,5 @@ func (s *TableSchema) NameKebabCase() string {
 
 type SchemaProvider interface {
 	io.Closer
-	GetTables(database string) ([]TableSchema, error)
+	GetTables(database string) ([]*TableSchema, error)
 }

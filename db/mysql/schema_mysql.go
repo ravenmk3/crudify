@@ -136,7 +136,7 @@ func (me *mySqlSchemaProvider) Close() error {
 	return me.db.Close()
 }
 
-func (me *mySqlSchemaProvider) GetTables(database string) ([]common.TableSchema, error) {
+func (me *mySqlSchemaProvider) GetTables(database string) ([]*common.TableSchema, error) {
 	tableRows := []MySqlTable{}
 	tableSql := "SELECT * FROM `information_schema`.`TABLES` WHERE `TABLE_SCHEMA` = ?"
 	err := me.db.Select(&tableRows, tableSql, database)
@@ -144,14 +144,14 @@ func (me *mySqlSchemaProvider) GetTables(database string) ([]common.TableSchema,
 		return nil, err
 	}
 
-	tables := []common.TableSchema{}
+	tables := []*common.TableSchema{}
 	for _, row := range tableRows {
 		columns, err := me.GetColumns(database, row.TableName)
 		if err != nil {
 			return nil, err
 		}
 
-		table := common.TableSchema{
+		table := &common.TableSchema{
 			Name:    row.TableName,
 			Columns: columns,
 			Comment: row.TableComment,
@@ -162,7 +162,7 @@ func (me *mySqlSchemaProvider) GetTables(database string) ([]common.TableSchema,
 	return tables, nil
 }
 
-func (me *mySqlSchemaProvider) GetColumns(database, table string) ([]common.ColumnSchema, error) {
+func (me *mySqlSchemaProvider) GetColumns(database, table string) ([]*common.ColumnSchema, error) {
 	columnRows := []MySqlColumn{}
 	columnSql := "SELECT * FROM `information_schema`.`COLUMNS` WHERE `TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?"
 	err := me.db.Select(&columnRows, columnSql, database, table)
@@ -170,10 +170,10 @@ func (me *mySqlSchemaProvider) GetColumns(database, table string) ([]common.Colu
 		return nil, err
 	}
 
-	columns := []common.ColumnSchema{}
+	columns := []*common.ColumnSchema{}
 	for _, row := range columnRows {
 		column := toColumnSchema(&row)
-		columns = append(columns, *column)
+		columns = append(columns, column)
 	}
 
 	return columns, nil
@@ -207,6 +207,7 @@ func toColumnSchema(row *MySqlColumn) *common.ColumnSchema {
 	return &common.ColumnSchema{
 		Name:            row.ColumnName,
 		DataType:        dataType,
+		NativeType:      row.DataType,
 		MaxLength:       maxLength,
 		IsNullable:      isNullable,
 		IsAutoIncrement: isAutoIncr,

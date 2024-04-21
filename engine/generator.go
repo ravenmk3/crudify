@@ -25,7 +25,7 @@ type Generator struct {
 type genContext struct {
 	Manifest *ManifestModel
 	Vars     map[string]any
-	Tables   []common.TableSchema
+	Tables   []*common.TableSchema
 }
 
 func NewGenerator(tmplDir, outputDir, configFile string) (*Generator, error) {
@@ -192,7 +192,7 @@ func (g *Generator) renderEntityTemplate(ctx *genContext, props *TemplateProps) 
 	}
 
 	for _, table := range ctx.Tables {
-		err = g.renderEntityTemplateWithTable(ctx, tmpl, &table, props)
+		err = g.renderEntityTemplateWithTable(ctx, tmpl, table, props)
 		if err != nil {
 			return err
 		}

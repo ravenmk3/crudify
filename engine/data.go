@@ -6,7 +6,7 @@ import (
 
 type GlobalTemplateData struct {
 	Vars   map[string]any
-	Tables []common.TableSchema
+	Tables []*common.TableSchema
 }
 
 type EntityTemplateData struct {
