@@ -5,11 +5,14 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
+	"strings"
 	"text/template"
 
 	"crudify/db/common"
 	"crudify/db/mysql"
 	"crudify/utils"
+	"github.com/robertkrimen/otto"
 	"github.com/sirupsen/logrus"
 )
 
@@ -19,10 +22,10 @@ type Generator struct {
 	outputDir string
 }
 
-type generationContext struct {
-	Manifest   *ManifestModel
-	GlobalData *GlobalTemplateData
-	Tables     []common.TableSchema
+type genContext struct {
+	Manifest *ManifestModel
+	Vars     map[string]any
+	Tables   []common.TableSchema
 }
 
 func NewGenerator(tmplDir, outputDir, configFile string) (*Generator, error) {
@@ -40,7 +43,7 @@ func NewGenerator(tmplDir, outputDir, configFile string) (*Generator, error) {
 }
 
 func (g *Generator) Execute() error {
-	ctx := new(generationContext)
+	ctx := new(genContext)
 
 	err := g.readManifest(ctx)
 	if err != nil {
@@ -52,11 +55,7 @@ func (g *Generator) Execute() error {
 		return err
 	}
 
-	globalVars := utils.MergeVariables(ctx.Manifest.Variables, g.config.Variables)
-	ctx.GlobalData = &GlobalTemplateData{
-		Vars:   globalVars,
-		Tables: ctx.Tables,
-	}
+	ctx.Vars = utils.MergeVariables(ctx.Manifest.Variables, g.config.Variables)
 
 	err = g.renderGlobalTemplates(ctx)
 	if err != nil {
@@ -70,7 +69,7 @@ func (g *Generator) Execute() error {
 	return nil
 }
 
-func (g *Generator) readManifest(ctx *generationContext) error {
+func (g *Generator) readManifest(ctx *genContext) error {
 	manifestFile := path.Join(g.tmplDir, "manifest.yaml")
 	manifest, err := ReadManifest(manifestFile)
 	if err != nil {
@@ -80,7 +79,7 @@ func (g *Generator) readManifest(ctx *generationContext) error {
 	return nil
 }
 
-func (g *Generator) readDbSchema(ctx *generationContext) error {
+func (g *Generator) readDbSchema(ctx *genContext) error {
 	dbc := g.config.Database
 	logrus.Infof("Reading database schema - %s:%d/%s",
 		dbc.Host, dbc.Port, dbc.Database)
@@ -107,7 +106,7 @@ func (g *Generator) readDbSchema(ctx *generationContext) error {
 	return nil
 }
 
-func (g *Generator) renderGlobalTemplates(ctx *generationContext) error {
+func (g *Generator) renderGlobalTemplates(ctx *genContext) error {
 	logrus.Info("Rendering global templates")
 
 	for _, tplProps := range ctx.Manifest.GlobalTemplates {
@@ -119,7 +118,7 @@ func (g *Generator) renderGlobalTemplates(ctx *generationContext) error {
 	return nil
 }
 
-func (g *Generator) renderGlobalTemplate(ctx *generationContext, props *TemplateProps) error {
+func (g *Generator) renderGlobalTemplate(ctx *genContext, props *TemplateProps) error {
 	logrus.Infof("Rendering global template: %s", props.File)
 
 	file := path.Join(g.tmplDir, props.File)
@@ -134,15 +133,38 @@ func (g *Generator) renderGlobalTemplate(ctx *generationContext, props *Template
 		return err
 	}
 
-	outputPath, err := resolveGlobalOutputPath(props.Output, ctx.GlobalData)
+	data := &GlobalTemplateData{
+		Vars:   utils.MergeVariables(ctx.Vars),
+		Tables: ctx.Tables,
+	}
+
+	err = g.runGlobalScripts(ctx, props.Script, data)
 	if err != nil {
 		return err
 	}
 
-	return g.renderToFile(tmpl, ctx.GlobalData, outputPath)
+	outputPath, err := resolveGlobalOutputPath(props.Output, data)
+	if err != nil {
+		return err
+	}
+
+	return g.renderToFile(tmpl, data, outputPath)
 }
 
-func (g *Generator) renderEntityTemplates(ctx *generationContext) error {
+func (g *Generator) runGlobalScripts(ctx *genContext, scriptFile string, data any) error {
+	files := []string{}
+
+	for _, file := range ctx.Manifest.GlobalScripts {
+		files = append(files, file)
+	}
+	if scriptFile != "" {
+		files = append(files, scriptFile)
+	}
+
+	return g.runScripts(files, "Model", data)
+}
+
+func (g *Generator) renderEntityTemplates(ctx *genContext) error {
 	logrus.Info("Rendering entity templates")
 
 	for _, tplProps := range ctx.Manifest.EntityTemplates {
@@ -154,7 +176,7 @@ func (g *Generator) renderEntityTemplates(ctx *generationContext) error {
 	return nil
 }
 
-func (g *Generator) renderEntityTemplate(ctx *generationContext, props *TemplateProps) error {
+func (g *Generator) renderEntityTemplate(ctx *genContext, props *TemplateProps) error {
 	logrus.Infof("Rendering entity template: %s", props.File)
 
 	file := path.Join(g.tmplDir, props.File)
@@ -170,7 +192,7 @@ func (g *Generator) renderEntityTemplate(ctx *generationContext, props *Template
 	}
 
 	for _, table := range ctx.Tables {
-		err = g.renderEntityTemplateWithTable(ctx, tmpl, &table, props.Output)
+		err = g.renderEntityTemplateWithTable(ctx, tmpl, &table, props)
 		if err != nil {
 			return err
 		}
@@ -179,23 +201,44 @@ func (g *Generator) renderEntityTemplate(ctx *generationContext, props *Template
 	return nil
 }
 
-func (g *Generator) renderEntityTemplateWithTable(ctx *generationContext,
-	tmpl *template.Template, table *common.TableSchema, outputPattern string) error {
+func (g *Generator) renderEntityTemplateWithTable(ctx *genContext, tmpl *template.Template,
+	table *common.TableSchema, props *TemplateProps) error {
 
 	logrus.Infof("Rendering entity template: %s, %s", tmpl.Name(), table.Name)
 
 	data := &EntityTemplateData{
-		Global: ctx.GlobalData,
-		Vars:   utils.Variables{},
-		Table:  table,
+		Global: &GlobalTemplateData{
+			Vars:   utils.MergeVariables(ctx.Vars),
+			Tables: ctx.Tables,
+		},
+		Vars:  utils.Variables{},
+		Table: table,
 	}
 
-	outputPath, err := resolveEntityOutputPath(outputPattern, data)
+	err := g.runEntityScripts(ctx, props.Script, data)
+	if err != nil {
+		return err
+	}
+
+	outputPath, err := resolveEntityOutputPath(props.Output, data)
 	if err != nil {
 		return err
 	}
 
 	return g.renderToFile(tmpl, data, outputPath)
+}
+
+func (g *Generator) runEntityScripts(ctx *genContext, scriptFile string, data any) error {
+	files := []string{}
+
+	for _, file := range ctx.Manifest.EntityScripts {
+		files = append(files, file)
+	}
+	if scriptFile != "" {
+		files = append(files, scriptFile)
+	}
+
+	return g.runScripts(files, "Model", data)
 }
 
 func (g *Generator) renderToFile(tmpl *template.Template, data any, outputPath string) error {
@@ -216,6 +259,38 @@ func (g *Generator) renderToFile(tmpl *template.Template, data any, outputPath s
 	}(writer)
 
 	return tmpl.Execute(writer, data)
+}
+
+func (g *Generator) runScripts(scriptFiles []string, varName string, data any) error {
+	if scriptFiles == nil || len(scriptFiles) <= 0 {
+		return nil
+	}
+
+	scripts := []string{}
+
+	for _, name := range scriptFiles {
+		filePath := filepath.Join(g.tmplDir, name)
+		content, err := os.ReadFile(filePath)
+		if err != nil {
+			return err
+		}
+		scripts = append(scripts, string(content))
+	}
+
+	script := strings.Join(scripts, "\n\n")
+	vm := otto.New()
+
+	err := vm.Set(varName, data)
+	if err != nil {
+		return err
+	}
+
+	_, err = vm.Run(script)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func resolveGlobalOutputPath(pattern string, data *GlobalTemplateData) (string, error) {

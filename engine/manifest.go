@@ -8,12 +8,15 @@ import (
 
 type TemplateProps struct {
 	File   string `yaml:"file"`
+	Script string `yaml:"script"`
 	Output string `yaml:"output"`
 }
 
 type ManifestModel struct {
 	Variables       map[string]any  `yaml:"variables"`
+	GlobalScripts   []string        `yaml:"global-scripts"`
 	GlobalTemplates []TemplateProps `yaml:"global-templates"`
+	EntityScripts   []string        `yaml:"entity-scripts"`
 	EntityTemplates []TemplateProps `yaml:"entity-templates"`
 }
 
