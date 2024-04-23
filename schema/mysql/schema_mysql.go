@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"crudify/db/common"
+	"crudify/schema/common"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 )

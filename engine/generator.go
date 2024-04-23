@@ -9,8 +9,8 @@ import (
 	"strings"
 	"text/template"
 
-	"crudify/db/common"
-	"crudify/db/mysql"
+	"crudify/schema/common"
+	"crudify/schema/mysql"
 	"crudify/utils"
 	"github.com/robertkrimen/otto"
 	"github.com/sirupsen/logrus"

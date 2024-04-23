@@ -1,7 +1,7 @@
 package engine
 
 import (
-	"crudify/db/common"
+	"crudify/schema/common"
 )
 
 type GlobalTemplateData struct {
