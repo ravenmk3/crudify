@@ -1,0 +1,28 @@
+package common
+
+var goTypeMap = map[DataType]string{
+	DataTypeBoolean:   "bool",
+	DataTypeByte:      "byte",
+	DataTypeInt16:     "int16",
+	DataTypeInt24:     "int32",
+	DataTypeInt32:     "int32",
+	DataTypeInt64:     "int64",
+	DataTypeFloat:     "float32",
+	DataTypeDouble:    "float64",
+	DataTypeDecimal:   "float64",
+	DataTypeCurrency:  "float64",
+	DataTypeDate:      "time.Time",
+	DataTypeTime:      "time.Time",
+	DataTypeYear:      "int16",
+	DataTypeDateTime:  "time.Time",
+	DataTypeTimeStamp: "time.Time",
+	DataTypeEnum:      "string",
+	DataTypeSet:       "string",
+	DataTypeGuid:      "string",
+	DataTypeUuid:      "string",
+	DataTypeString:    "string",
+	DataTypeJson:      "string",
+	DataTypeXml:       "string",
+	DataTypeBinary:    "[]byte",
+	DataTypeAny:       "any",
+}

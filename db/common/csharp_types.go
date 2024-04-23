@@ -1,0 +1,28 @@
+package common
+
+var csharpTypeMap = map[DataType]string{
+	DataTypeBoolean:   "bool",
+	DataTypeByte:      "byte",
+	DataTypeInt16:     "short",
+	DataTypeInt24:     "int",
+	DataTypeInt32:     "int",
+	DataTypeInt64:     "long",
+	DataTypeFloat:     "float",
+	DataTypeDouble:    "double",
+	DataTypeDecimal:   "decimal",
+	DataTypeCurrency:  "decimal",
+	DataTypeDate:      "DateTime",
+	DataTypeTime:      "DateTime",
+	DataTypeYear:      "short",
+	DataTypeDateTime:  "DateTime",
+	DataTypeTimeStamp: "DateTime",
+	DataTypeEnum:      "string",
+	DataTypeSet:       "string",
+	DataTypeGuid:      "string",
+	DataTypeUuid:      "string",
+	DataTypeString:    "string",
+	DataTypeJson:      "string",
+	DataTypeXml:       "string",
+	DataTypeBinary:    "byte[]",
+	DataTypeAny:       "object",
+}

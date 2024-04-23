@@ -1,0 +1,28 @@
+package common
+
+var pythonTypeMap = map[DataType]string{
+	DataTypeBoolean:   "bool",
+	DataTypeByte:      "int",
+	DataTypeInt16:     "int",
+	DataTypeInt24:     "int",
+	DataTypeInt32:     "int",
+	DataTypeInt64:     "int",
+	DataTypeFloat:     "float",
+	DataTypeDouble:    "double",
+	DataTypeDecimal:   "Decimal",
+	DataTypeCurrency:  "Decimal",
+	DataTypeDate:      "date",
+	DataTypeTime:      "time",
+	DataTypeYear:      "int",
+	DataTypeDateTime:  "datetime",
+	DataTypeTimeStamp: "datetime",
+	DataTypeEnum:      "str",
+	DataTypeSet:       "str",
+	DataTypeGuid:      "str",
+	DataTypeUuid:      "str",
+	DataTypeString:    "str",
+	DataTypeJson:      "str",
+	DataTypeXml:       "str",
+	DataTypeBinary:    "bytes",
+	DataTypeAny:       "any",
+}

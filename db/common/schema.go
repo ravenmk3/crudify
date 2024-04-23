@@ -48,12 +48,36 @@ type ColumnSchema struct {
 	Comment         string
 }
 
+func (s *ColumnSchema) CSharpDataType() string {
+	t, ok := csharpTypeMap[s.DataType]
+	if ok {
+		return t
+	}
+	return "object"
+}
+
 func (s *ColumnSchema) JavaDataType() string {
 	t, ok := javaTypeMap[s.DataType]
 	if ok {
 		return t
 	}
 	return "Object"
+}
+
+func (s *ColumnSchema) GoDataType() string {
+	t, ok := goTypeMap[s.DataType]
+	if ok {
+		return t
+	}
+	return "any"
+}
+
+func (s *ColumnSchema) PythonDataType() string {
+	t, ok := pythonTypeMap[s.DataType]
+	if ok {
+		return t
+	}
+	return "any"
 }
 
 type TableSchema struct {

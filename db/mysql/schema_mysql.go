@@ -180,7 +180,7 @@ func (me *mySqlSchemaProvider) GetColumns(database, table string) ([]*common.Col
 }
 
 func toColumnSchema(row *MySqlColumn) *common.ColumnSchema {
-	dataType := getDataType(row.DataType)
+	dataType := inferDataType(row)
 	isNullable := strings.ToUpper(row.IsNullable) == "YES"
 	isAutoIncr := strings.Contains(strings.ToLower(row.Extra), "auto_increment")
 	isUnsigned := strings.Contains(strings.ToLower(row.ColumnType), "unsigned")
@@ -220,11 +220,17 @@ func toColumnSchema(row *MySqlColumn) *common.ColumnSchema {
 	}
 }
 
-func getDataType(mysqlDataType string) common.DataType {
-	mysqlDataType = strings.ToLower(mysqlDataType)
+func inferDataType(row *MySqlColumn) common.DataType {
+	mysqlDataType := strings.ToLower(row.DataType)
+	if row.NumericPrecision != nil && *row.NumericPrecision == 1 &&
+		mysqlDataType == DataTypeBit {
+		return common.DataTypeBoolean
+	}
+
 	dataType, ok := dataTypeMap[mysqlDataType]
 	if ok {
 		return dataType
 	}
+
 	return common.DataTypeAny
 }
