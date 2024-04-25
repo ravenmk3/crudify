@@ -15,6 +15,8 @@ import (
 	"crudify/utils"
 	"github.com/robertkrimen/otto"
 	"github.com/sirupsen/logrus"
+	"github.com/vbauerster/mpb/v8"
+	"github.com/vbauerster/mpb/v8/decor"
 )
 
 type Generator struct {
@@ -56,6 +58,12 @@ func (g *Generator) Execute() error {
 		return err
 	}
 
+	globalTpls := ctx.Manifest.GlobalTemplates
+	entityTpls := ctx.Manifest.EntityTemplates
+
+	logrus.Infof("GlobalTemplates: %d, EntityTemplates: %d, Tables: %d",
+		len(ctx.Tables), len(globalTpls), len(entityTpls))
+
 	ctx.Vars = utils.MergeVariables(ctx.Manifest.Variables, g.config.Variables)
 
 	err = g.renderGlobalTemplates(ctx)
@@ -75,6 +83,12 @@ func (g *Generator) readManifest(ctx *genContext) error {
 	manifest, err := ReadManifest(manifestFile)
 	if err != nil {
 		return err
+	}
+	if manifest.GlobalTemplates == nil {
+		manifest.GlobalTemplates = []TemplateProps{}
+	}
+	if manifest.EntityTemplates == nil {
+		manifest.EntityTemplates = []TemplateProps{}
 	}
 	ctx.Manifest = manifest
 	return nil
@@ -102,7 +116,6 @@ func (g *Generator) readDbSchema(ctx *genContext) error {
 		return err
 	}
 
-	logrus.Infof("%d tables found", len(tables))
 	ctx.Tables = tables
 	return nil
 }
@@ -178,7 +191,7 @@ func (g *Generator) renderEntityTemplates(ctx *genContext) error {
 }
 
 func (g *Generator) renderEntityTemplate(ctx *genContext, props *TemplateProps) error {
-	logrus.Infof("Rendering entity template: %s", props.File)
+	logrus.Debugf("Rendering entity template: %s", props.File)
 
 	file := path.Join(g.tmplDir, props.File)
 	tplBytes, err := os.ReadFile(file)
@@ -192,8 +205,12 @@ func (g *Generator) renderEntityTemplate(ctx *genContext, props *TemplateProps) 
 		return err
 	}
 
+	progress, bar := NewEntityTemplateProgress(len(ctx.Tables), props.File)
+	defer progress.Wait()
+
 	for _, table := range ctx.Tables {
 		err = g.renderEntityTemplateWithTable(ctx, tmpl, table, props)
+		bar.Increment()
 		if err != nil {
 			return err
 		}
@@ -202,10 +219,25 @@ func (g *Generator) renderEntityTemplate(ctx *genContext, props *TemplateProps) 
 	return nil
 }
 
+func NewEntityTemplateProgress(total int, name string) (*mpb.Progress, *mpb.Bar) {
+	progress := mpb.New(mpb.WithWidth(20))
+
+	bar := progress.New(int64(total),
+		mpb.BarStyle(),
+		mpb.PrependDecorators(
+			decor.Name(name),
+		),
+		mpb.AppendDecorators(
+			decor.CountersNoUnit("%d / %d"),
+		))
+
+	return progress, bar
+}
+
 func (g *Generator) renderEntityTemplateWithTable(ctx *genContext, tmpl *template.Template,
 	table *common.TableSchema, props *TemplateProps) error {
 
-	logrus.Infof("Rendering entity template: %s, %s", tmpl.Name(), table.Name)
+	logrus.Debugf("Rendering entity template: %s, %s", tmpl.Name(), table.Name)
 
 	data := &EntityTemplateData{
 		Global: &GlobalTemplateData{
