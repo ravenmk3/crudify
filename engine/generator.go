@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"bufio"
 	"bytes"
 	"log"
 	"os"
@@ -249,13 +250,22 @@ func (g *Generator) renderToFile(tmpl *template.Template, data any, outputPath s
 		return err
 	}
 
-	writer, err := os.Create(outputPath)
+	file, err := os.Create(outputPath)
 	if err != nil {
 		return err
 	}
 
-	defer func(w *os.File) {
-		_ = w.Close()
+	defer func(f *os.File) {
+		if e := f.Close(); e != nil {
+			logrus.Error(e)
+		}
+	}(file)
+
+	writer := bufio.NewWriter(file)
+	defer func(w *bufio.Writer) {
+		if e := w.Flush(); e != nil {
+			logrus.Error(e)
+		}
 	}(writer)
 
 	return tmpl.Execute(writer, data)
