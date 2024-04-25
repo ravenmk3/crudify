@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+	"time"
 
 	"crudify/schema/common"
 	"crudify/schema/mysql"
@@ -64,7 +65,14 @@ func (g *Generator) Execute() error {
 	logrus.Infof("GlobalTemplates: %d, EntityTemplates: %d, Tables: %d",
 		len(ctx.Tables), len(globalTpls), len(entityTpls))
 
-	ctx.Vars = utils.MergeVariables(ctx.Manifest.Variables, g.config.Variables)
+	now := time.Now()
+	builtinVars := utils.Variables{
+		"Db":       g.config.Database,
+		"DateTime": now.Format(("2006-01-02 15:04:05")),
+		"Date":     now.Format("2006-01-02"),
+	}
+
+	ctx.Vars = utils.MergeVariables(builtinVars, ctx.Manifest.Variables, g.config.Variables)
 
 	err = g.renderGlobalTemplates(ctx)
 	if err != nil {
@@ -219,21 +227,6 @@ func (g *Generator) renderEntityTemplate(ctx *genContext, props *TemplateProps) 
 	return nil
 }
 
-func NewEntityTemplateProgress(total int, name string) (*mpb.Progress, *mpb.Bar) {
-	progress := mpb.New(mpb.WithWidth(20))
-
-	bar := progress.New(int64(total),
-		mpb.BarStyle(),
-		mpb.PrependDecorators(
-			decor.Name(name),
-		),
-		mpb.AppendDecorators(
-			decor.CountersNoUnit("%d / %d"),
-		))
-
-	return progress, bar
-}
-
 func (g *Generator) renderEntityTemplateWithTable(ctx *genContext, tmpl *template.Template,
 	table *common.TableSchema, props *TemplateProps) error {
 
@@ -375,4 +368,19 @@ func resolveEntityOutputPath(pattern string, data *EntityTemplateData) (string, 
 	}
 
 	return buf.String(), nil
+}
+
+func NewEntityTemplateProgress(total int, name string) (*mpb.Progress, *mpb.Bar) {
+	progress := mpb.New(mpb.WithWidth(20))
+
+	bar := progress.New(int64(total),
+		mpb.BarStyle(),
+		mpb.PrependDecorators(
+			decor.CountersNoUnit("Rendering: %d/%d"),
+		),
+		mpb.AppendDecorators(
+			decor.Name(name),
+		))
+
+	return progress, bar
 }
