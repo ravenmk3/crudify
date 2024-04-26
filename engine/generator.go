@@ -63,7 +63,7 @@ func (g *Generator) Execute() error {
 	entityTpls := ctx.Manifest.EntityTemplates
 
 	logrus.Infof("GlobalTemplates: %d, EntityTemplates: %d, Tables: %d",
-		len(ctx.Tables), len(globalTpls), len(entityTpls))
+		len(globalTpls), len(entityTpls), len(ctx.Tables))
 
 	now := time.Now()
 	builtinVars := utils.Variables{
