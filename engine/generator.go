@@ -220,6 +220,7 @@ func (g *Generator) renderEntityTemplate(ctx *genContext, props *TemplateProps) 
 		err = g.renderEntityTemplateWithTable(ctx, tmpl, table, props)
 		bar.Increment()
 		if err != nil {
+			progress.Shutdown()
 			return err
 		}
 	}
@@ -332,6 +333,9 @@ func (g *Generator) runScripts(scriptFiles []string, varName string, data any) e
 
 	_, err = vm.Run(script)
 	if err != nil {
+		if ottoErr, ok := err.(*otto.Error); ok {
+			logrus.Errorf("Script error: %s, %s", scriptFiles, ottoErr.String())
+		}
 		return err
 	}
 
